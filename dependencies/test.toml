@@ -1,0 +1,8 @@
+[versions]
+kotlincompiletesting = "1.5.0"
+junit                = "5.7.0"
+
+[libraries]
+tschuchortdev-kotlincompiletesting = { module = "com.github.tschuchortdev:kotlin-compile-testing", version.ref = "kotlincompiletesting" }
+junit-bom                          = { module = "org.junit:junit-bom",                             version.ref = "junit" }
+junit-jupiter                      = { module = "org.junit.jupiter:junit-jupiter" }

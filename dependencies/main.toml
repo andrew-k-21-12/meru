@@ -1,0 +1,8 @@
+[versions]
+autoservice = "1.0.1"
+
+[libraries]
+kotlin-compiler-embedable      = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable" }
+kotlin-gradleplugin-api        = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api" }
+google-autoservice-core        = { module = "com.google.auto.service:auto-service",             version.ref = "autoservice" }
+google-autoservice-annotations = { module = "com.google.auto.service:auto-service-annotations", version.ref = "autoservice" }

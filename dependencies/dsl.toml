@@ -1,0 +1,11 @@
+[versions]
+kotlin       = "1.8.21"
+# There is some magic behind this version making the compiler plugin's JAR assemble automatically
+# when it becomes needed by local usage of its corresponding Gradle plugin.
+# Upgrading this version will lead to a need of explicit declaration for Gradle tasks' dependencies to prepare this JAR.
+mavenpublish = "0.21.0"
+
+[plugins]
+kotlin-jvm              = { id = "org.jetbrains.kotlin.jvm",     version.ref = "kotlin" }
+kotlin-kapt             = { id = "org.jetbrains.kotlin.kapt",    version.ref = "kotlin" }
+vanniktech-mavenpublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenpublish" }
