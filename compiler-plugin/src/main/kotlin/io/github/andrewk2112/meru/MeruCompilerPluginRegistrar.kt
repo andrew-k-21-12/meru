@@ -18,16 +18,28 @@ import java.util.ServiceLoader
  * won't be generated, and all compilations will ignore the existence of this plugin without any reporting at all.
  *
  * Read more about [ServiceLoader] and [AutoService] to get understanding about how they work.
+ *
+ * @param targetAnnotationClass A fully qualified target annotation class name to look for (an example of configuration).
+ *                              Extracted as a constructor argument here only to simplify testing,
+ *                              check [MeruCommandLineProcessor] to see how to properly declare configuration options.
+ *                              Must be not empty, or [IllegalArgumentException] will be thrown.
  */
 @ExperimentalCompilerApi
 @AutoService(CompilerPluginRegistrar::class)
-internal class MeruCompilerPluginRegistrar : CompilerPluginRegistrar() {
+internal class MeruCompilerPluginRegistrar(private val targetAnnotationClass: String = "") : CompilerPluginRegistrar() {
 
     /**
-     * All extensions contributing to the compilation are getting registered here.
+     * Extracting and processing the [CompilerConfiguration] set by the [MeruCommandLineProcessor],
+     * registering all extensions contributing to the compilation.
      */
-    override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) =
-        IrGenerationExtension.registerExtension(MeruIrGenerationExtension(configuration.irMessageLogger))
+    override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
+        val targetAnnotationClass = configuration
+            .get(TARGET_ANNOTATION_CLASS_CONFIG_KEY, targetAnnotationClass)
+            .takeIf { it.isNotBlank() } ?: throw IllegalArgumentException("No target annotation class name is provided")
+        IrGenerationExtension.registerExtension(
+            MeruIrGenerationExtension(targetAnnotationClass, configuration.irMessageLogger)
+        )
+    }
 
     override val supportsK2 = true
 

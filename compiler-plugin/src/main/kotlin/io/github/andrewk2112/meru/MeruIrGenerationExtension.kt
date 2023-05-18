@@ -8,11 +8,19 @@ import org.jetbrains.kotlin.ir.util.IrMessageLogger
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 /**
- * Just one of extensions contributing to the compilation. Passes the [messageLogger] to further processing.
+ * An extension contributing to the compilation.
+ * Passes the [targetAnnotationClass] and [messageLogger] for further processing.
  */
-internal class MeruIrGenerationExtension(private val messageLogger: IrMessageLogger) : IrGenerationExtension {
+internal class MeruIrGenerationExtension(
+    private val targetAnnotationClass: String,
+    private val messageLogger: IrMessageLogger,
+) : IrGenerationExtension {
 
-    override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) =
-        moduleFragment.transformChildrenVoid(MeruIrElementTransformerVoid(messageLogger))
+    override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        moduleFragment.transformChildrenVoid(MeruIrElementTransformerVoid(targetAnnotationClass, messageLogger))
+        // At this point the transformer above completes all its processing
+        // (having the entire Gradle module's codebase visited),
+        // so it can be a good place to apply some post-processing here accordingly.
+    }
 
 }

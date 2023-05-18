@@ -16,8 +16,8 @@ import kotlin.jvm.Throws
  */
 @ExperimentalCompilerApi
 @Throws(IllegalStateException::class, IOException::class, SecurityException::class)
-internal fun createMeruKotlinCompilation() = KotlinCompilation().apply {
-    compilerPluginRegistrars = listOf(MeruCompilerPluginRegistrar())
+internal fun createMeruKotlinCompilation(targetAnnotationClass: String) = KotlinCompilation().apply {
+    compilerPluginRegistrars = listOf(MeruCompilerPluginRegistrar(targetAnnotationClass))
     inheritClassPath         = true
     messageOutputStream      = System.out
     useIR                    = true

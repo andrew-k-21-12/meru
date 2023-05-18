@@ -16,9 +16,11 @@ import org.jetbrains.annotations.NotNull
 
 @NotNull  
 private const val FOO = 123
+private const val BAR = 456
 
 private fun bar() {
     FOO
+    BAR
 }
             """)
             .assertCompiled()
@@ -29,6 +31,6 @@ private fun bar() {
     // Private.
 
     @ExperimentalCompilerApi
-    private val compiler: KotlinCompilation = createMeruKotlinCompilation()
+    private val compiler: KotlinCompilation = createMeruKotlinCompilation("org.jetbrains.annotations.NotNull")
 
 }

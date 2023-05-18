@@ -1,5 +1,6 @@
 package io.github.andrewk2112.meru
 
+import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
@@ -16,6 +17,14 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 private class MeruPlugin : KotlinCompilerPluginSupportPlugin {
 
     /**
+     * Creating a scope named "meru" to set up configurations declared in [MeruExtension] within it
+     * (inside Gradle build scripts).
+     */
+    override fun apply(target: Project): Unit = target.run {
+        extensions.create("meru", MeruExtension::class.java)
+    }
+
+    /**
      * This is a good place to enable or disable the compiler plugin
      * according to some environment conditions for example.
      */
@@ -30,7 +39,18 @@ private class MeruPlugin : KotlinCompilerPluginSupportPlugin {
      * See the original docs for [KotlinCompilerPluginSupportPlugin.applyToCompilation] as well.
      */
     override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> =
-        kotlinCompilation.target.project.provider { emptyList() }
+        kotlinCompilation.target.project.run {
+            provider {
+                listOf(
+                    SubpluginOption(
+                        // This key matches the one declared as an option for the compiler plugin.
+                        key   = "targetAnnotationClass",
+                        // Using a value set within a Gradle build script by the extension created above.
+                        value = extensions.getByType(MeruExtension::class.java).targetAnnotationClass.get()
+                    ),
+                )
+            }
+        }
 
     override fun getCompilerPluginId(): String = getPluginArtifact().artifactId
 

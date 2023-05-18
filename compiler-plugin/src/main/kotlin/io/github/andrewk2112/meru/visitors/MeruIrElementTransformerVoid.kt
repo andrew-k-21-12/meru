@@ -5,40 +5,55 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
 import org.jetbrains.kotlin.ir.expressions.*
-import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.name.FqName
 
 /**
- * A visitor to perform some sample processing done by the compiler plugin.
+ * A visitor to perform some processing intended to be done by the compiler plugin.
+ *
+ * Please keep in mind that it visits only the code from those Gradle modules
+ * for which this compiler plugin was enabled:
+ * no declarations from dependency Gradle modules are going to be visited transitively
+ * until the compiler plugin is applied to them explicitly.
+ *
+ * At the same time it's possible to get some basic information for references
+ * which are declared outside in other dependency Gradle modules
+ * (for example, fully qualified names of their declarations can be retrieved).
+ *
+ * All type casts and other manipulations done below were inferred by debugging-based reverse engineering,
+ * as no documentations were found for these operations.
  */
-internal class MeruIrElementTransformerVoid(private val messageLogger: IrMessageLogger) : IrElementTransformerVoid() {
+internal class MeruIrElementTransformerVoid(
+    private val targetAnnotationClass: String,
+    private val messageLogger: IrMessageLogger,
+) : IrElementTransformerVoid() {
 
     // Overrides.
 
     /**
-     * Visits both declarations and further references to them.
+     * Getting here on each encountering of declaration or reference within the code being compiled.
      */
     override fun visitDeclarationReference(expression: IrDeclarationReference): IrExpression {
 
-        // Fetching and reporting fully qualified names of all annotations used for a declaration (if any).
-        expression.annotations?.map { it.fqName }?.joinToString()?.let {
-            messageLogger.report(
-                IrMessageLogger.Severity.WARNING,
-                "Say hello to a declaration annotated with: $it",
-                null
-            )
+        // Checking if it is a property declaration and reporting whether it has the target annotation.
+        (expression.symbol.owner as? IrField)?.let { field ->
+            field.annotations
+                .find { it.annotationClass.kotlinFqName.asString() == targetAnnotationClass }
+                ?.let {
+                    report("Found a declaration `${field.kotlinFqName}` annotated with the target annotation")
+                }
         }
 
-        // Getting the declaration (if present) of a reference and reporting its annotations' fully qualified names.
-        expression.declaration?.let { declaration ->
-            messageLogger.report(
-                IrMessageLogger.Severity.WARNING,
-                "Here comes a reference to `${declaration.fqName}` " +
-                        "annotated with: ${declaration.annotations?.map { it.fqName }?.joinToString()}",
-                null
-            )
+        // Getting the declaration of a reference (if present) and reporting whether it has the target annotation.
+        (expression.symbol.owner as? IrFunctionImpl)?.correspondingPropertySymbol?.let { propertyDeclaration ->
+            (propertyDeclaration.owner as? IrPropertyImpl)?.backingField?.annotations
+                ?.find { it.annotationClass.kotlinFqName.asString() == targetAnnotationClass }
+                ?.let {
+                    report(
+                        "Found a reference to `${propertyDeclaration.owner.fqNameWhenAvailable}` " +
+                                "which declaration is annotated with the target annotation",
+                    )
+                }
         }
 
         return super.visitDeclarationReference(expression)
@@ -47,21 +62,11 @@ internal class MeruIrElementTransformerVoid(private val messageLogger: IrMessage
 
 
 
-    // Private - a bit of magic done by debugging-based reverse engineering.
+    // Private.
 
-    private val IrDeclarationReference.annotations: List<IrConstructorCall>?
-        get() = (symbol.owner as? IrField)?.annotations
-
-    private val IrConstructorCall.fqName: FqName
-        get() = annotationClass.kotlinFqName
-
-    private val IrDeclarationReference.declaration: IrPropertySymbol?
-        get() = (symbol.owner as? IrFunctionImpl)?.correspondingPropertySymbol
-
-    private val IrPropertySymbol.fqName: FqName?
-        get() = (owner as? IrPropertyImpl)?.fqNameWhenAvailable
-
-    private val IrPropertySymbol.annotations: List<IrConstructorCall>?
-        get() = (owner as? IrPropertyImpl)?.backingField?.annotations
+    /**
+     * Just a short form to do all similar reporting here.
+     */
+    private fun report(message: String) = messageLogger.report(IrMessageLogger.Severity.WARNING, message, null)
 
 }
